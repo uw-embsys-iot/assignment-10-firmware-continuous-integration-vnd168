@@ -27,3 +27,10 @@ jobs:
         working-directory: firmware-workspace
         run: |
         west build -p -b stm32l496_cell app -- -DEXTRA_CONF_FILE="mcumgr.conf" -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"firmware_space/conf/root-rsa-2048.pem\"
+      
+      # IOTEMBSYS10: Add a step to run the unit tests with twister
+      - name: Twister Tests
+        working-directory: firmware_space
+        shell: bash
+        run: |
+          west twister -T tests -v --inline-logs --integration
