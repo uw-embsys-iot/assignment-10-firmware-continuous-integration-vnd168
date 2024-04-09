@@ -1,7 +1,8 @@
-name: Build 
+name: Build
 
 # IOTEMBSYS10: Change this to only apply to specific branches, if desired
 on: [pull_request]
+
 
 jobs:
   build:
@@ -14,20 +15,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          path: firmware-workspace
+          path: firmware_space
+      
       # IOTEMBSYS10: Add a step to initialize the west workspace
       - name: Initialize
-        working-directory: firmware-workspace
+        working-directory: firmware_space
         run: |
           west init -l .
           west update
 
       # IOTEMBSYS10: Add a step to build the application
       - name: Build firmware
-        working-directory: firmware-workspace
+        working-directory: firmware_space
         run: |
-        west build -p -b stm32l496_cell app -- -DEXTRA_CONF_FILE="mcumgr.conf" -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"firmware_space/conf/root-rsa-2048.pem\"
-      
+          west build -p -b stm32l496_cell app -- -DEXTRA_CONF_FILE="mcumgr.conf" -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"firmware_space/conf/root-rsa-2048.pem\"
+
       # IOTEMBSYS10: Add a step to run the unit tests with twister
       - name: Twister Tests
         working-directory: firmware_space
