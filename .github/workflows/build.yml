@@ -1,38 +1,41 @@
-name: Build
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
-# IOTEMBSYS10: Change this to only apply to specific branches, if desired
-on: [pull_request]
-
+name: Upload Release Asset
 
 jobs:
   build:
+    name: Upload Release Asset
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container: zephyrprojectrtos/ci:latest
     env:
       CMAKE_PREFIX_PATH: /opt/toolchains
     steps:
-      # IOTEMBSYS10: Add a step to checkout the repo
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          path: firmware_space
-      
-      # IOTEMBSYS10: Add a step to initialize the west workspace
+          path: embsys-firmware
       - name: Initialize
-        working-directory: firmware_space
+        working-directory: embsys-firmware
         run: |
           west init -l .
           west update
-
-      # IOTEMBSYS10: Add a step to build the application
-      - name: Build firmware
-        working-directory: firmware_space
+      # TODO(mskobov): Use imgtool to sign the existing binary instead
+      # TODO(mskobov): Automatically push to S3
+      - name: Build signed firmware
+        working-directory: embsys-firmware
         run: |
-          west build -p -b stm32l496_cell app -- -DEXTRA_CONF_FILE="mcumgr.conf" -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"firmware_space/conf/root-rsa-2048.pem\"
-
-      # IOTEMBSYS10: Add a step to run the unit tests with twister
-      - name: Twister Tests
-        working-directory: firmware_space
-        shell: bash
+          west build -b stm32l496_cell app -p -- -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"embsys-firmware/conf/root-rsa-2048.pem\" -DEXTRA_CONF_FILE=mcumgr.conf
+      - name: Copy signed firmware
         run: |
-          west twister -T tests -v --inline-logs --integration
+          cp embsys-firmware/build/zephyr/zephyr.signed.bin ${{ github.sha }}.signed.bin
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ github.sha }}.signed.bin
